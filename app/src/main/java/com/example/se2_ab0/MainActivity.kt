@@ -36,7 +36,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainView(name: String, modifier: Modifier = Modifier) {
-    var text by remember { mutableStateOf("") }
+    var matNrInput by remember { mutableStateOf("") }
+    var resultText by remember { mutableStateOf<String?>(null) }
     var serverResponse by remember { mutableStateOf<String?>(null) }
 
     Column(modifier = modifier.fillMaxWidth(),
@@ -47,14 +48,14 @@ fun MainView(name: String, modifier: Modifier = Modifier) {
         Text("Geben Sie Ihre Matrikelnummer ein")
 
         OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
+            value = matNrInput,
+            onValueChange = { matNrInput = it },
             label = { Text("Matrikelnummer") }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = { sendToServer(text) { response -> serverResponse = response } }) {
+        Button(onClick = { sendToServer(matNrInput) { response -> serverResponse = response } }) {
             Text("How long have I studied?")
         }
 
@@ -66,34 +67,12 @@ fun MainView(name: String, modifier: Modifier = Modifier) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        Button(onClick = { resultText = findCommonDivisors(matNrInput)} ) {
+            Text("Teiler prüfen")
+        }
 
-    }
-}
-
-fun sendToServer(mnr: String, onResult: (String) -> Unit) {
-    CoroutineScope(Dispatchers.IO).launch {
-        val socket: Socket = Socket("se2-submission.aau.at", 20080)
-        val writer: PrintWriter = PrintWriter(socket.getOutputStream(), true)
-        val reader: BufferedReader = BufferedReader(InputStreamReader(socket.getInputStream()))
-
-        try {
-            writer.println(mnr)
-            val response = reader.readLine()
-            withContext(Dispatchers.Main) {
-                onResult(response)
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                onResult("Fehler: ${e.message}")
-            }
-        } finally {
-            try {
-                writer.close()
-                reader.close()
-                socket.close()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        resultText?.let {
+            Text(it)
         }
     }
 }
